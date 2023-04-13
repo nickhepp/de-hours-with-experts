@@ -1,6 +1,9 @@
 package com.labs1904
 
+import java.io.{BufferedWriter, File, FileWriter}
 import scala.collection.immutable.HashMap
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 /**
  * An ingredient has an amount and a description.
@@ -55,8 +58,8 @@ object SecretRecipeDecoder {
    * @return
    */
   def decodeString(str: String): String = {
-    // todo: implement me
-    "1 cup"
+    val decodedStr = str.map(c => ENCODING.getOrElse(c.toString, c.toString)).mkString
+    decodedStr
   }
 
   /**
@@ -65,8 +68,30 @@ object SecretRecipeDecoder {
    * @return
    */
   def decodeIngredient(line: String): Ingredient = {
-    // todo: implement me
-    Ingredient("1 cup", "butter")
+    val decodedLine = decodeString(line)
+    val LINE_SPLITTER = '#'
+    val qtyItemTuple = decodedLine.split(LINE_SPLITTER)
+    if (qtyItemTuple.length != 2)
+      throw new IllegalArgumentException(s"Value in line '$line' is missing the line splitter '$LINE_SPLITTER'.")
+
+    Ingredient(qtyItemTuple(0), qtyItemTuple(1))
+  }
+
+
+  def readFile(filename: String): Seq[String] = {
+    val bufferedSource = io.Source.fromFile(filename)
+    val lines = (for (line <- bufferedSource.getLines()) yield line).toList
+    bufferedSource.close
+    lines
+  }
+
+  def writeFile(filename: String, lines: Seq[String]): Unit = {
+    val file = new File(filename)
+    val bw = new BufferedWriter(new FileWriter(file))
+    for (line <- lines) {
+      bw.write(line)
+    }
+    bw.close()
   }
 
   /**
@@ -74,6 +99,16 @@ object SecretRecipeDecoder {
    * @param args
    */
   def main(args: Array[String]): Unit = {
-    // TODO: implement me
+
+    val fileLines = readFile("C:\\git_src\\de-hours-with-experts\\scala\\target\\classes\\secret_recipe.txt")
+    val decodedFileLines: ListBuffer[String] = ListBuffer[String]("amount, description\r\n")
+
+    for (fileLine <- fileLines)
+      {
+        val ingredient: Ingredient = decodeIngredient(fileLine)
+        decodedFileLines += s"${ingredient.amount}, ${ingredient.description}\r\n"
+      }
+
+    writeFile("C:\\git_src\\de-hours-with-experts\\scala\\target\\classes\\decoded_recipe.txt", decodedFileLines)
   }
 }
